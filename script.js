@@ -8,7 +8,7 @@ CANVAS.width = SCREEN_WIDTH;
 CANVAS.height = SCREEN_HEIGHT;
 
 const GRID_SIZE = 3;
-// デスクトップ用デフォルトサイズ (モバイルで動的に上書きされる)
+// デスクトップ用デフォルトサイズ 
 const PLOT_SIZE_DEFAULT = 160; 
 const PLOT_PADDING = 30; // パディングは固定
 
@@ -253,7 +253,7 @@ class FarmGame {
         this.updateUI();
     }
     
-    // 【修正箇所】畑の配置ロジックと動的サイズ計算 (横幅最大化)
+    // 【修正箇所】畑の配置ロジックと動的サイズ計算 (クリッピング対策)
     initPlots() {
         this.plots = []; 
         
@@ -264,40 +264,42 @@ class FarmGame {
         const CANVAS_TOTAL_HEIGHT = SCREEN_HEIGHT;
         const PANEL_WIDTH = 280;
         
-        // --- モバイル最適化: 横幅いっぱいに畑を拡大する (正方形を維持) ---
-        if (window.innerWidth <= 768) {
-            // 1000pxのキャンバス幅を最大限に利用する計算
-            const CANVAS_WIDTH_FOR_GRID = CANVAS_TOTAL_WIDTH; // 1000
-            const OUTER_MARGIN = PLOT_PADDING; // 30px
-            const USABLE_WIDTH = CANVAS_WIDTH_FOR_GRID - 2 * OUTER_MARGIN; // 940
+        // --- モバイル最適化: 縦方向のクリッピングを防ぐため、高さを優先 ---
+        if (window.innerWidth <= 768 || window.innerHeight <= 600) {
+            const UI_TOP_AREA = 50 + 70; // UIバー (50px) + 種選択パネル (70px) の合計高さ (120px)
+            const LOG_HEIGHT = 70;       // ログエリアの高さ (70px)
             
-            // 3つのマスと2つのパディング (60px) の合計から plotSize を逆算
+            // 畑の描画に利用できる最大高さ 
+            const USABLE_HEIGHT_FOR_GRID = CANVAS_TOTAL_HEIGHT - UI_TOP_AREA - LOG_HEIGHT; // 750 - 120 - 70 = 560px
+
             const FIXED_PADDING_WIDTH = (GRID_SIZE - 1) * PLOT_PADDING; // 60
-            const REMAINDER_WIDTH = USABLE_WIDTH - FIXED_PADDING_WIDTH; // 880
             
-            // 【修正】plotSize = 293 (939px wide grid)
-            plotSize = Math.floor(REMAINDER_WIDTH / GRID_SIZE); 
+            // 560px に収まる最大サイズ (166px) を計算
+            const REMAINDER_SIZE = USABLE_HEIGHT_FOR_GRID - FIXED_PADDING_WIDTH; // 500
+            plotSize = Math.floor(REMAINDER_SIZE / GRID_SIZE); // 166
         }
 
-        this.plotSize = plotSize; // 293 for mobile, 160 for desktop
+        this.plotSize = plotSize; // 166 for responsive
         
-        const totalGridWidth = GRID_SIZE * plotSize + (GRID_SIZE - 1) * PLOT_PADDING; 
-        const totalGridHeight = totalGridWidth; // 常に正方形のグリッド
+        const totalGridWidth = GRID_SIZE * plotSize + (GRID_SIZE - 1) * PLOT_PADDING; // 558px
+        const totalGridHeight = totalGridWidth; // 常に正方形のグリッド (558px)
         
         let startX; 
         let startY;
         
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 768 || window.innerHeight <= 600) {
             // Mobile: 内部キャンバス幅 (1000px) の中央に配置
-            // (1000 - 939) / 2 = 30.5
+            // (1000 - 558) / 2 = 221
             startX = (CANVAS_TOTAL_WIDTH - totalGridWidth) / 2; 
             
-            // Mobile: 畑の高さ (939px) をキャンバスの高さ (750px) の中央に配置
-            // 【修正】(750 - 939) / 2 = -94.5。これで見た目と判定が一致する。
-            startY = (CANVAS_TOTAL_HEIGHT - totalGridHeight) / 2; 
+            // Mobile: 畑を UIエリア (120px) と Logエリア (70px) の間の560pxに中央配置
+            const UI_TOP_AREA = 50 + 70; // 120
+            const USABLE_HEIGHT = CANVAS_TOTAL_HEIGHT - UI_TOP_AREA - 70; // 560
+            // 120 + (560 - 558) / 2 = 121
+            startY = UI_TOP_AREA + (USABLE_HEIGHT - totalGridHeight) / 2; 
 
         } else {
-            // デスクトップレイアウト (PLOT_SIZE_DEFAULT=160の場合、totalGridWidth=540)
+            // デスクトップレイアウト (plotSize=160の場合、totalGridWidth=540)
             const canvasAreaWidth = CANVAS_TOTAL_WIDTH - PANEL_WIDTH; 
             const horizontalMargin = (canvasAreaWidth - totalGridWidth) / 2; 
             startX = PANEL_WIDTH + horizontalMargin; 
@@ -313,7 +315,7 @@ class FarmGame {
             for (let col = 0; col < GRID_SIZE; col++) {
                 const x = startX + col * (plotSize + PLOT_PADDING);
                 const y = startY + row * (plotSize + PLOT_PADDING);
-                // 【修正点】計算した plotSize を Plot のコンストラクタに渡す
+                // 計算した plotSize を Plot のコンストラクタに渡し、判定と描画を一致させる
                 this.plots.push(new Plot(x, y, col, row, plotSize)); 
             }
         }
@@ -321,12 +323,14 @@ class FarmGame {
 
     initCropSelectionButtons() {
         const cropPanel = document.getElementById('crop-selection-panel');
+        // タイトルはモバイルで非表示になるため、デスクトップのみを想定して維持
         cropPanel.innerHTML = '<h3 class="panel-title">種選択</h3>';
         CROP_KEYS.forEach(key => {
             const data = CROP_TYPES[key];
             const button = document.createElement('button');
             button.className = 'crop-button';
             button.id = `crop-button-${key}`;
+            // ボタンの表示内容を維持
             button.innerHTML = `
                 <span>${data.name}</span>
                 <span style="font-size:0.8em;">費用:${data.cost}C / スコア:${data.score}P</span>
@@ -337,7 +341,7 @@ class FarmGame {
         this.selectCrop(this.selectedCrop);
     }
 
-    // 【修正済み】クリックイベントリスナー
+    // クリックイベントリスナー (スケール補正ロジックは維持)
     initEventListeners() {
         CANVAS.addEventListener('click', (e) => {
             const rect = CANVAS.getBoundingClientRect();
@@ -361,7 +365,7 @@ class FarmGame {
         this.logManager.addLog(`種を選択: ${CROP_TYPES[key].name}`, COLORS.WHITE);
     }
 
-    // 【修正済み】クリック判定ロジック
+    // クリック判定ロジック
     handleClick(pos) {
         if (this.gameState === "TITLE" || this.gameState === "GAMEOVER" || this.gameState !== "PLAYING") return;
 
@@ -394,7 +398,7 @@ class FarmGame {
         this.overlay.style.display = 'none';
     }
     
-    // 【修正済み】リスタート時の初期化
+    // リスタート時の初期化
     restartGame() {
         this.plots = [];
         this.player = new Player();

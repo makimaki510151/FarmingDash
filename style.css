@@ -25,10 +25,13 @@ body {
     min-height: 100vh;
     background-color: #333;
     user-select: none;
+    /* スクロールを完全に禁止 */
+    overflow: hidden; 
 }
 
 #game-container {
     position: relative;
+    /* デスクトップの最大サイズを定義 */
     width: var(--screen-width);
     height: var(--screen-height);
     background-color: var(--color-blue-light);
@@ -173,19 +176,20 @@ body {
 }
 
 /* =======================================================
-   モバイル向けレイアウト調整 (幅 768px 以下) 
+   モバイル向けレイアウト調整 (幅 768px 以下 または 高さ 600px 以下) 
    ======================================================= */
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 600px) { 
     #game-container {
-        width: 100vw;
-        min-height: 100vh;
-        height: auto;
+        width: 100%;
+        height: 100vh; /* 画面にぴったり合わせる */
         
         grid-template-areas: 
             "ui"
             "seed"
             "canvas";
-        grid-template-rows: var(--ui-height) auto 1fr; 
+
+        /* UI(50px)と種選択パネル(70px)を固定し、残りをキャンバスに割り当てる */
+        grid-template-rows: var(--ui-height) 70px 1fr; 
         grid-template-columns: 1fr;
         max-width: none;
         max-height: none;
@@ -193,21 +197,23 @@ body {
     }
 
     #game-canvas {
-        /* object-fit: contain により、横幅いっぱいに拡大されつつ正方形が維持される */
+        /* object-fit: contain により、正方形を維持しながらエリア内で最大化 */
         margin: auto;
     }
 
     #crop-selection-panel {
+        /* 横画面でもボタンが画面下部に表示され、横スクロールで選択できるように調整 */
         flex-direction: row;
         justify-content: flex-start;
         padding: 5px;
-        height: auto; 
+        height: 70px; /* 固定高さ */
         gap: 5px;
         white-space: nowrap;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch; 
         scrollbar-width: none; 
         -ms-overflow-style: none;
+        border-bottom: 1px solid #333; /* 視認性向上のための境界線を追加 */
     }
 
     #crop-selection-panel::-webkit-scrollbar {
@@ -223,19 +229,24 @@ body {
         margin: 0 3px;
         height: 60px; 
         padding: 5px;
-        font-size: 0.9em;
+        font-size: 0.85em; /* フォントを少し小さく */
         white-space: normal;
         word-break: break-word;
-        min-width: 100px; 
+        min-width: 90px; /* 最小幅を確保 */
         flex-shrink: 0; 
+        /* ボタンのデザイン微調整 */
+        border: 1px solid var(--color-black);
+        box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
     }
     
     .crop-button span:first-child {
         font-size: 1.0em; 
+        font-weight: bold; /* 作物名を強調 */
     }
     
     .crop-button span:last-child {
-        font-size: 0.7em;
+        font-size: 0.65em; /* 費用/スコアはさらに小さく */
+        line-height: 1.2;
     }
     
     /* オーバーレイのモバイル向け調整 */
@@ -254,11 +265,17 @@ body {
     }
 
     #log-container {
+        /* このabsolute配置は、grid-area: canvasの最下部に表示されます */
         position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
         height: var(--log-height);
         z-index: 5;
+    }
+    
+    .log-message {
+        /* ログメッセージのフォントサイズをモバイル向けに調整 */
+        font-size: 0.9em;
     }
 }
