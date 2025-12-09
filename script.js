@@ -8,7 +8,7 @@ CANVAS.width = SCREEN_WIDTH;
 CANVAS.height = SCREEN_HEIGHT;
 
 const GRID_SIZE = 3;
-// 【修正点】PLOT_SIZEは動的に設定するため、デフォルト値としてのみ定義
+// デスクトップ用デフォルトサイズ (モバイルで動的に上書きされる)
 const PLOT_SIZE_DEFAULT = 160; 
 const PLOT_PADDING = 30; // パディングは固定
 
@@ -119,7 +119,6 @@ class LogManager {
 
 // --- 3. 畑のマス (Plot) クラス ---
 class Plot {
-    // 【修正点】plotSize を引数で受け取るように変更
     constructor(x, y, gridX, gridY, plotSize) {
         // グローバル定数ではなく、受け取った plotSize を使用
         this.rect = { x: x, y: y, width: plotSize, height: plotSize };
@@ -254,32 +253,33 @@ class FarmGame {
         this.updateUI();
     }
     
-    // 【修正箇所】畑の配置ロジックと動的サイズ計算
+    // 【修正箇所】畑の配置ロジックと動的サイズ計算 (横幅最大化)
     initPlots() {
         this.plots = []; 
         
-        let plotSize = PLOT_SIZE_DEFAULT; // デフォルトサイズ
+        let plotSize = PLOT_SIZE_DEFAULT; // Default size (160)
         
         // デスクトップ基準のキャンバスサイズ
         const CANVAS_TOTAL_WIDTH = SCREEN_WIDTH;
         const CANVAS_TOTAL_HEIGHT = SCREEN_HEIGHT;
         const PANEL_WIDTH = 280;
         
-        // --- モバイル最適化: 正方形を保ちつつ、縦画面の利用可能領域に合わせる ---
+        // --- モバイル最適化: 横幅いっぱいに畑を拡大する (正方形を維持) ---
         if (window.innerWidth <= 768) {
-            const UI_HEIGHT_ASSUMED = 50 + 70; // UIバー + 種選択パネルの高さ (120)
-            const LOG_HEIGHT_ASSUMED = 70; // ログエリア 70px
-            // キャンバス全体 (750px) から固定UI高さを引いた、畑に使える垂直方向の領域
-            const USABLE_HEIGHT_ON_CANVAS = CANVAS_TOTAL_HEIGHT - UI_HEIGHT_ASSUMED - LOG_HEIGHT_ASSUMED; // 750 - 190 = 560px
-
-            const FIXED_PADDING_WIDTH = (GRID_SIZE - 1) * PLOT_PADDING; // 60
+            // 1000pxのキャンバス幅を最大限に利用する計算
+            const CANVAS_WIDTH_FOR_GRID = CANVAS_TOTAL_WIDTH; // 1000
+            const OUTER_MARGIN = PLOT_PADDING; // 30px
+            const USABLE_WIDTH = CANVAS_WIDTH_FOR_GRID - 2 * OUTER_MARGIN; // 940
             
-            // 560px に収まる最大サイズ (166px) を計算
-            const REMAINDER_SIZE = USABLE_HEIGHT_ON_CANVAS - FIXED_PADDING_WIDTH; // 500
-            plotSize = Math.floor(REMAINDER_SIZE / GRID_SIZE); // 166
+            // 3つのマスと2つのパディング (60px) の合計から plotSize を逆算
+            const FIXED_PADDING_WIDTH = (GRID_SIZE - 1) * PLOT_PADDING; // 60
+            const REMAINDER_WIDTH = USABLE_WIDTH - FIXED_PADDING_WIDTH; // 880
+            
+            // 【修正】plotSize = 293 (939px wide grid)
+            plotSize = Math.floor(REMAINDER_WIDTH / GRID_SIZE); 
         }
 
-        this.plotSize = plotSize; // 計算したサイズをクラスプロパティに保存
+        this.plotSize = plotSize; // 293 for mobile, 160 for desktop
         
         const totalGridWidth = GRID_SIZE * plotSize + (GRID_SIZE - 1) * PLOT_PADDING; 
         const totalGridHeight = totalGridWidth; // 常に正方形のグリッド
@@ -288,20 +288,16 @@ class FarmGame {
         let startY;
         
         if (window.innerWidth <= 768) {
-            const UI_HEIGHT_ASSUMED = 50 + 70; // 120
-            const LOG_HEIGHT_ASSUMED = 70; // 70
-            const USABLE_HEIGHT = CANVAS_TOTAL_HEIGHT - UI_HEIGHT_ASSUMED - LOG_HEIGHT_ASSUMED; // 560
-            
             // Mobile: 内部キャンバス幅 (1000px) の中央に配置
-            // (1000 - 558) / 2 = 221
+            // (1000 - 939) / 2 = 30.5
             startX = (CANVAS_TOTAL_WIDTH - totalGridWidth) / 2; 
             
-            // Mobile: UIエリア直下から、残りの領域 (560px) の中央に配置
-            // 120 + (560 - 558) / 2 = 121
-            startY = UI_HEIGHT_ASSUMED + (USABLE_HEIGHT - totalGridHeight) / 2; 
+            // Mobile: 畑の高さ (939px) をキャンバスの高さ (750px) の中央に配置
+            // 【修正】(750 - 939) / 2 = -94.5。これで見た目と判定が一致する。
+            startY = (CANVAS_TOTAL_HEIGHT - totalGridHeight) / 2; 
 
         } else {
-            // デスクトップレイアウト 
+            // デスクトップレイアウト (PLOT_SIZE_DEFAULT=160の場合、totalGridWidth=540)
             const canvasAreaWidth = CANVAS_TOTAL_WIDTH - PANEL_WIDTH; 
             const horizontalMargin = (canvasAreaWidth - totalGridWidth) / 2; 
             startX = PANEL_WIDTH + horizontalMargin; 
@@ -371,7 +367,7 @@ class FarmGame {
 
         let clickedPlot = null;
         for (const plot of this.plots) {
-            // Plot の rect には動的な plotSize が反映されているため、描画と判定が一致
+            // Plot の rect には動的な plotSize と配置座標が反映されており、描画と判定が一致
             if (pos.x >= plot.rect.x && pos.x <= plot.rect.x + plot.rect.width &&
                 pos.y >= plot.rect.y && pos.y <= plot.rect.y + plot.rect.height) {
                 clickedPlot = plot;

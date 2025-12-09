@@ -108,7 +108,7 @@ body {
     height: 100%;
     background-color: var(--color-blue-light);
     
-    /* デスクトップではアスペクト比を維持して中央寄せ */
+    /* 正方形の見た目を維持するため object-fit: contain を維持 */
     object-fit: contain; 
     margin: auto; 
 }
@@ -192,11 +192,9 @@ body {
         box-shadow: none;
     }
 
-    /* 【修正点】object-fit: contain を維持し、横幅を最大利用させる */
     #game-canvas {
-        /* object-fit: contain を維持することで正方形を維持 */
+        /* object-fit: contain により、横幅いっぱいに拡大されつつ正方形が維持される */
         margin: auto;
-        /* width: 100% と height: 100% は grid-area: canvas で継承されている */
     }
 
     #crop-selection-panel {
