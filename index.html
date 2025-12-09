@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>ミニファーム・ダッシュ！ (Web)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-bar">
+            <span id="score-display">スコア: 0</span>
+            <span id="coins-display">コイン: 10</span>
+            <span id="timer-display">残り時間: 01:00</span>
+        </div>
+
+        <div id="crop-selection-panel">
+            <h3 class="panel-title">種選択</h3>
+            </div>
+
+        <canvas id="game-canvas"></canvas>
+
+        <div id="log-container">
+            </div>
+
+        <div id="overlay">
+            <h1 id="overlay-title"></h1>
+            <p id="overlay-message"></p>
+            <button id="restart-button">画面をクリックして開始！</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

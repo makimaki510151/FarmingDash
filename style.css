@@ -1,0 +1,266 @@
+:root {
+    --screen-width: 1000px; 
+    --screen-height: 750px;
+    --panel-width: 280px; 
+    --log-height: 70px;
+    --ui-height: 50px;
+
+    --color-brown: #8B4513;
+    --color-green-dark: #228B22;
+    --color-yellow: #FFFF00;
+    --color-blue-light: #ADD8E6;
+    --color-red-cost: #FF6464;
+    --color-green-gain: #64FF64;
+    --color-black: #000000;
+    --color-white: #FFFFFF;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #333;
+    user-select: none;
+}
+
+#game-container {
+    position: relative;
+    width: var(--screen-width);
+    height: var(--screen-height);
+    background-color: var(--color-blue-light);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    display: grid;
+    grid-template-areas: 
+        "ui ui ui"
+        "seed canvas canvas"
+        "seed canvas canvas"; 
+    /* UIの高さを確定させ、残りを種選択パネルとキャンバスに割り当てる */
+    grid-template-rows: var(--ui-height) 1fr; 
+    grid-template-columns: var(--panel-width) 1fr 1fr; 
+}
+
+/* UIバー (スコア、コイン、時間) */
+#ui-bar {
+    grid-area: ui;
+    background-color: var(--color-black);
+    color: var(--color-white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px; 
+    font-size: 1.2em;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 種選択パネル */
+#crop-selection-panel {
+    grid-area: seed;
+    background-color: var(--color-black);
+    padding: 15px; 
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+}
+
+.panel-title {
+    color: var(--color-white);
+    text-align: center;
+    margin: 5px 0 15px 0;
+    font-size: 1.5em; 
+}
+
+.crop-button {
+    height: 75px; 
+    background-color: var(--color-brown);
+    border: 2px solid var(--color-black);
+    color: var(--color-white);
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.1s;
+    font-size: 1.1em;
+}
+
+.crop-button.selected {
+    border-color: var(--color-yellow);
+    background-color: var(--color-green-dark);
+}
+
+.crop-button span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* キャンバス (畑エリア) */
+#game-canvas {
+    grid-area: canvas;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-blue-light);
+    
+    /* デスクトップではアスペクト比を維持して中央寄せ */
+    object-fit: contain; 
+    margin: auto; 
+}
+
+/* ログ表示 */
+#log-container {
+    /* position: absoluteで最下部に固定 */
+    position: absolute; 
+    bottom: 0;
+    width: 100%;
+    height: var(--log-height);
+    pointer-events: none; 
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    overflow: hidden;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0)); 
+    z-index: 5;
+}
+
+#mobile-action-bar {
+    display: none; 
+}
+
+/* オーバーレイ (タイトル、ゲームオーバー) */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(34, 139, 34, 0.9); 
+    color: var(--color-white);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+#overlay-title {
+    font-size: 3em;
+    color: var(--color-yellow);
+    margin-bottom: 20px;
+}
+
+#overlay-message {
+    font-size: 1.7em;
+    white-space: pre-wrap; 
+    margin-bottom: 40px;
+}
+
+#restart-button {
+    padding: 20px 40px;
+    font-size: 1.8em;
+    background-color: var(--color-black);
+    color: var(--color-yellow);
+    border: 3px solid var(--color-yellow);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+/* =======================================================
+   モバイル向けレイアウト調整 (幅 768px 以下) 
+   ======================================================= */
+@media (max-width: 768px) {
+    #game-container {
+        width: 100vw;
+        min-height: 100vh;
+        height: auto;
+        
+        grid-template-areas: 
+            "ui"
+            "seed"
+            "canvas";
+        grid-template-rows: var(--ui-height) auto 1fr; 
+        grid-template-columns: 1fr;
+        max-width: none;
+        max-height: none;
+        box-shadow: none;
+    }
+
+    /* 【修正点】object-fit: contain を維持し、横幅を最大利用させる */
+    #game-canvas {
+        /* object-fit: contain を維持することで正方形を維持 */
+        margin: auto;
+        /* width: 100% と height: 100% は grid-area: canvas で継承されている */
+    }
+
+    #crop-selection-panel {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 5px;
+        height: auto; 
+        gap: 5px;
+        white-space: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; 
+        scrollbar-width: none; 
+        -ms-overflow-style: none;
+    }
+
+    #crop-selection-panel::-webkit-scrollbar {
+        display: none; 
+    }
+
+    .panel-title {
+        display: none; 
+    }
+
+    .crop-button {
+        flex-grow: 0; 
+        margin: 0 3px;
+        height: 60px; 
+        padding: 5px;
+        font-size: 0.9em;
+        white-space: normal;
+        word-break: break-word;
+        min-width: 100px; 
+        flex-shrink: 0; 
+    }
+    
+    .crop-button span:first-child {
+        font-size: 1.0em; 
+    }
+    
+    .crop-button span:last-child {
+        font-size: 0.7em;
+    }
+    
+    /* オーバーレイのモバイル向け調整 */
+    #overlay-title {
+        font-size: 2.2em; 
+    }
+
+    #overlay-message {
+        font-size: 1.2em; 
+        padding: 0 10px; 
+    }
+
+    #restart-button {
+        padding: 15px 30px; 
+        font-size: 1.5em; 
+    }
+
+    #log-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: var(--log-height);
+        z-index: 5;
+    }
+}
